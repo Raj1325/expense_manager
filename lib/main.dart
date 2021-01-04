@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
                 width: double.infinity,
               ),
               ...transactions.map((trxn) {
-                Card(
+                return Card(
                   child: Text(trxn.title),
                 );
               }).toList(),
