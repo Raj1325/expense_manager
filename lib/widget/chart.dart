@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 class Chart extends StatelessWidget {
   final List<Transaction> _rescentTransaction;
 
-  Chart(this._rescentTransaction);
+  Chart(this._rescentTransaction) {
+    print(_rescentTransaction);
+  }
 
   List<Map<String, Object>> get transactionForWeek {
     return List.generate(7, (index) {
@@ -21,7 +23,7 @@ class Chart extends StatelessWidget {
         }
       }
       return {"day": DateFormat.E().format(day), "amount": totalSum};
-    }).toList();
+    }).reversed.toList();
   }
 
   double get maxSpending {
@@ -32,7 +34,6 @@ class Chart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(transactionForWeek);
     return Card(
       margin: EdgeInsets.all(20),
       child: Padding(

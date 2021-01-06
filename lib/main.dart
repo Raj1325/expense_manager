@@ -21,7 +21,8 @@ class _MyAppState extends State<MyApp> {
         home: MyHomePage(),
         theme: ThemeData(
           primarySwatch: Colors.purple,
-          accentColor: Colors.yellowAccent,
+          accentColor: Colors.purpleAccent,
+          errorColor: Colors.red,
           fontFamily: 'Quicksand',
           textTheme: ThemeData.light().textTheme.copyWith(
                   headline6: TextStyle(
@@ -54,21 +55,26 @@ class _MyHomePageState extends State<MyHomePage> {
   ];
 
   void _addTransaction(TextEditingController titleController,
-      TextEditingController amountController) {
+      TextEditingController amountController, DateTime date) {
     String trxnTitle = titleController.text;
     double trxnAmount = double.parse(amountController.text);
-    int trxnId = transactions.length + 1;
-    DateTime trxnTime = DateTime.now();
+    String trxnId = DateTime.now().toString();
 
-    if (trxnTitle.isEmpty || trxnAmount <= 0) {
+    if (trxnTitle.isEmpty || trxnAmount <= 0 || date == null) {
       return;
     }
     setState(() {
       transactions.add(Transaction(
-          id: trxnId, amount: trxnAmount, time: trxnTime, title: trxnTitle));
+          id: trxnId, amount: trxnAmount, time: date, title: trxnTitle));
     });
 
     Navigator.of(context).pop();
+  }
+
+  void deletTransaction(String trxnStamp) {
+    setState(() {
+      transactions.removeWhere((element) => trxnStamp == element.id);
+    });
   }
 
   void bottomModalSheet(BuildContext context) {
@@ -80,32 +86,44 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   List<Transaction> get recentTransaction {
-    return transactions.map((trxn) {
-      if (trxn.time.isAfter(DateTime.now().subtract(Duration(days: 7)))) {
-        return trxn;
-      }
+    return transactions.where((element) {
+      return element.time.isAfter(DateTime.now().subtract(Duration(days: 7)));
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    AppBar appbar = AppBar(
+      title: Text('Expense Manager'),
+      actions: [
+        IconButton(
+          icon: Icon(Icons.add),
+          onPressed: () => bottomModalSheet(context),
+        )
+      ],
+    );
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Expense Manager'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () => bottomModalSheet(context),
-          )
-        ],
-      ),
+      appBar: appbar,
       body: SingleChildScrollView(
         child: Column(
           //mainAxisAlignment: MainAxisAlignment.spaceAround,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Chart(recentTransaction),
-            TransactionList(transactions),
+            Container(
+              height: (MediaQuery.of(context).size.height -
+                      appbar.preferredSize.height -
+                      MediaQuery.of(context).padding.top) *
+                  0.3,
+              child: Chart(recentTransaction),
+            ),
+            Container(
+              height: (MediaQuery.of(context).size.height -
+                      appbar.preferredSize.height -
+                      MediaQuery.of(context).padding.top) *
+                  0.7,
+              child: TransactionList(transactions, deletTransaction),
+            ),
           ],
         ),
       ),
