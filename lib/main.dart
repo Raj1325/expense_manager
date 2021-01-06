@@ -1,10 +1,18 @@
+import "dart:io";
+
 import 'package:expense_manager/modal/transactions.dart';
 import 'package:expense_manager/widget/add_transaction.dart';
 import 'package:expense_manager/widget/chart.dart';
 import 'package:expense_manager/widget/transaction_list.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 void main() {
+  // WidgetsFlutterBinding.ensureInitialized();
+  // SystemChrome.setPreferredOrientations([
+  //   DeviceOrientation.portraitUp,
+  //   DeviceOrientation.portraitDown,
+  // ]);
   runApp(MyApp());
 }
 
@@ -54,6 +62,8 @@ class _MyHomePageState extends State<MyHomePage> {
     // Transaction(id: 5, amount: 80.56, time: DateTime.now(), title: "Fuel"),
   ];
 
+  bool _switch = false;
+
   void _addTransaction(TextEditingController titleController,
       TextEditingController amountController, DateTime date) {
     String trxnTitle = titleController.text;
@@ -93,47 +103,103 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    AppBar appbar = AppBar(
-      title: Text('Expense Manager'),
-      actions: [
-        IconButton(
-          icon: Icon(Icons.add),
-          onPressed: () => bottomModalSheet(context),
-        )
-      ],
+    final mediaquery = MediaQuery.of(context);
+    final isLandscape = mediaquery.orientation == Orientation.landscape;
+    final PreferredSizeWidget appbar = Platform.isIOS
+        ? CupertinoNavigationBar(
+            middle: Text('Expense Manager'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () => bottomModalSheet(context),
+                  child: Icon(CupertinoIcons.add),
+                ),
+              ],
+            ),
+          )
+        : AppBar(
+            title: Text('Expense Manager'),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.add),
+                onPressed: () => bottomModalSheet(context),
+              )
+            ],
+          );
+    final transactionWidget = Container(
+      height: (mediaquery.size.height -
+              appbar.preferredSize.height -
+              mediaquery.padding.top) *
+          0.7,
+      child: TransactionList(transactions, deletTransaction),
     );
 
-    return Scaffold(
-      appBar: appbar,
-      body: SingleChildScrollView(
-        child: Column(
-          //mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    final pageBody = SafeArea(
+        child: SingleChildScrollView(
+      child: Column(
+        //mainAxisAlignment: MainAxisAlignment.spaceAround,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (isLandscape)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Show chart",
+                  style: Theme.of(context).textTheme.headline6,
+                ),
+                Switch.adaptive(
+                    activeColor: Theme.of(context).accentColor,
+                    value: _switch,
+                    onChanged: (val) {
+                      setState(() {
+                        _switch = val;
+                      });
+                    })
+              ],
+            ),
+          if (!isLandscape)
             Container(
-              height: (MediaQuery.of(context).size.height -
+              height: (mediaquery.size.height -
                       appbar.preferredSize.height -
-                      MediaQuery.of(context).padding.top) *
+                      mediaquery.padding.top) *
                   0.3,
               child: Chart(recentTransaction),
             ),
-            Container(
-              height: (MediaQuery.of(context).size.height -
-                      appbar.preferredSize.height -
-                      MediaQuery.of(context).padding.top) *
-                  0.7,
-              child: TransactionList(transactions, deletTransaction),
-            ),
-          ],
-        ),
+          if (!isLandscape) transactionWidget,
+          if (isLandscape)
+            _switch
+                ? Container(
+                    height: (mediaquery.size.height -
+                            appbar.preferredSize.height -
+                            mediaquery.padding.top) *
+                        0.7,
+                    child: Chart(recentTransaction),
+                  )
+                : transactionWidget,
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(
-          Icons.add,
-        ),
-        onPressed: () => bottomModalSheet(context),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
+    ));
+
+    return Platform.isIOS
+        ? CupertinoPageScaffold(
+            child: pageBody,
+            navigationBar: appbar,
+          )
+        : Scaffold(
+            appBar: appbar,
+            body: pageBody,
+            floatingActionButton: Platform.isIOS
+                ? Container()
+                : FloatingActionButton(
+                    child: Icon(
+                      Icons.add,
+                    ),
+                    onPressed: () => bottomModalSheet(context),
+                  ),
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.centerFloat,
+          );
   }
 }
